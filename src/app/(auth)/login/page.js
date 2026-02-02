@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import LoginPageInner from "./LoginPageInner";
 import { Suspense } from "react";
 
