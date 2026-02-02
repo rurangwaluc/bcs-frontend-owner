@@ -1,15 +1,5 @@
-const RAW_API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:4000";
-
-function normalizeBase(base) {
-  const b = String(base || "").trim();
-  if (!b) return "http://localhost:4000";
-  return b.endsWith("/") ? b.slice(0, -1) : b;
-}
-
-const API_BASE = normalizeBase(RAW_API_BASE);
+// Always use Next.js proxy. Never call Railway directly from browser.
+const API_BASE = "/api";
 
 function joinUrl(base, path) {
   const p = String(path || "");
@@ -36,10 +26,9 @@ function hasOwn(obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
-// If someone passes a string while claiming JSON, validate it's JSON.
 function ensureJsonString(str) {
   const s = String(str);
-  JSON.parse(s); // throws if invalid
+  JSON.parse(s);
   return s;
 }
 
@@ -58,17 +47,13 @@ export async function apiFetch(path, options = {}) {
       body = undefined;
     } else if (isFormData(b)) {
       body = b;
-      // DO NOT set Content-Type; fetch will add boundary
     } else if (typeof b === "string") {
-      // If caller passed string, only set JSON header if it's valid JSON
       body = ensureJsonString(b);
       headers["Content-Type"] = "application/json";
     } else if (typeof b === "object") {
-      // Plain object -> JSON stringify
       body = JSON.stringify(b);
       headers["Content-Type"] = "application/json";
     } else {
-      // numbers/booleans -> stringify
       body = JSON.stringify(b);
       headers["Content-Type"] = "application/json";
     }
@@ -78,7 +63,7 @@ export async function apiFetch(path, options = {}) {
     method: opts.method || "GET",
     headers,
     body,
-    credentials: "include",
+    credentials: "include", // critical for cookies
     cache: opts.cache || "no-store",
   });
 

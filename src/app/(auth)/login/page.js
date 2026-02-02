@@ -11,7 +11,7 @@ export default function LoginPage() {
 
   const nextPath = useMemo(() => sp.get("next") || "/", [sp]);
 
-  const [email, setEmail] = useState("owner@bcs.local");
+  const [email, setEmail] = useState("owner@bcs.com");
   const [password, setPassword] = useState("Owner@12345");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

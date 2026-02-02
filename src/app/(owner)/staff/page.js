@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { apiFetch } from "../../../lib/api";
 
-const ROLES = ["admin", "manager", "store_keeper", "seller", "cashier"];
+const ROLES = [
+  "owner",
+  "admin",
+  "manager",
+  "store_keeper",
+  "seller",
+  "cashier",
+];
 
 export default function StaffPage() {
   const [users, setUsers] = useState([]);
@@ -39,7 +47,7 @@ export default function StaffPage() {
     try {
       await apiFetch("/users", {
         method: "POST",
-        body: JSON.stringify({ name, email, role, password })
+        body: JSON.stringify({ name, email, role, password }),
       });
       setName("");
       setEmail("");
@@ -57,7 +65,7 @@ export default function StaffPage() {
     try {
       await apiFetch(`/users/${id}`, {
         method: "PATCH",
-        body: JSON.stringify(patch)
+        body: JSON.stringify(patch),
       });
       setMsg("✅ Updated");
       await load();
@@ -70,8 +78,11 @@ export default function StaffPage() {
     <div>
       <div className="mb-4">
         <h1 className="text-xl font-semibold">Staff</h1>
-        <p className="mt-1 text-sm text-gray-600">Global filters apply from the top bar.</p>
-      </div><div className="max-w-6xl mx-auto p-6">
+        <p className="mt-1 text-sm text-gray-600">
+          Global filters apply from the top bar.
+        </p>
+      </div>
+      <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Staff</h1>
@@ -90,7 +101,9 @@ export default function StaffPage() {
         {msg ? (
           <div className="mt-4 text-sm">
             {msg.startsWith("✅") ? (
-              <div className="p-3 rounded-lg bg-green-50 text-green-800">{msg}</div>
+              <div className="p-3 rounded-lg bg-green-50 text-green-800">
+                {msg}
+              </div>
             ) : (
               <div className="p-3 rounded-lg bg-red-50 text-red-700">{msg}</div>
             )}
@@ -98,7 +111,10 @@ export default function StaffPage() {
         ) : null}
 
         {/* Create */}
-        <form onSubmit={createUser} className="mt-6 bg-white rounded-xl shadow p-4">
+        <form
+          onSubmit={createUser}
+          className="mt-6 bg-white rounded-xl shadow p-4"
+        >
           <div className="font-semibold">Create staff</div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
             <input
@@ -121,7 +137,9 @@ export default function StaffPage() {
               onChange={(e) => setRole(e.target.value)}
             >
               {ROLES.map((r) => (
-                <option key={r} value={r}>{r}</option>
+                <option key={r} value={r}>
+                  {r}
+                </option>
               ))}
             </select>
             <input
@@ -198,7 +216,9 @@ function UserRow({ u, onSave }) {
           onChange={(e) => setRole(e.target.value)}
         >
           {ROLES.map((r) => (
-            <option key={r} value={r}>{r}</option>
+            <option key={r} value={r}>
+              {r}
+            </option>
           ))}
         </select>
       </td>
