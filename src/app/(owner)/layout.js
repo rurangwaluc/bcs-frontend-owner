@@ -1,8 +1,10 @@
-import { redirect } from "next/navigation";
-import { serverApiFetch } from "../../lib/serverApi";
-import OwnerSidebar from "../../components/OwnerSidebar";
+export const dynamic = "force-dynamic";
+
 import OwnerHeader from "../../components/OwnerHeader";
 import { OwnerProvider } from "../../context/ownerContext";
+import OwnerSidebar from "../../components/OwnerSidebar";
+import { redirect } from "next/navigation";
+import { serverApiFetch } from "../../lib/serverApi";
 
 export default async function OwnerLayout({ children }) {
   const meRes = await serverApiFetch("/auth/me");
@@ -10,7 +12,6 @@ export default async function OwnerLayout({ children }) {
     redirect("/login");
   }
   if (!meRes.ok) {
-    // Fail closed: do not render partial owner UI on unexpected errors
     return (
       <div className="p-6">
         <h1 className="text-lg font-semibold">Unable to load</h1>
@@ -24,7 +25,6 @@ export default async function OwnerLayout({ children }) {
   const user = meRes.data?.user;
   if (!user) redirect("/login");
 
-  // Owner-only UI
   if (String(user.role || "").toLowerCase() !== "owner") {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -41,13 +41,13 @@ export default async function OwnerLayout({ children }) {
     );
   }
 
-  // Locations (only shown in UI if 2+)
   let locations = [];
   const locRes = await serverApiFetch("/owner/locations");
   if (locRes.ok) {
-    locations = Array.isArray(locRes.data?.locations) ? locRes.data.locations : [];
+    locations = Array.isArray(locRes.data?.locations)
+      ? locRes.data.locations
+      : [];
   } else {
-    // Fallback: single location derived from the user (keeps UI stable)
     if (user.locationId) {
       locations = [{ id: user.locationId, name: "Main location" }];
     }
