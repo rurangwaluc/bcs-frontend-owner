@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { serverApiFetch } from "../../lib/serverApi";
 
@@ -65,7 +67,6 @@ export default async function OverviewPage({ searchParams }) {
   const payCount = Number(summary?.paymentsCount || 0);
   const payTotal = Number(summary?.paymentsTotalAmount || 0);
 
-  // Owner lens: if sales exist but payments are low, it hints "cashier not recording" or "credit".
   const unrecordedHint =
     salesCount > 0 && payCount === 0
       ? "Sales exist but no payments recorded in this period."
