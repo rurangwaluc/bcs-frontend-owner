@@ -1,13 +1,11 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { login } from "../../../lib/auth";
 
-export default function LoginPage() {
+export default function LoginPageInner() {
   const router = useRouter();
   const sp = useSearchParams();
 
@@ -22,6 +20,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       await login(email.trim(), password);
       router.replace(nextPath);
