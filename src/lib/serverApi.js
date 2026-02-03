@@ -1,96 +1,44 @@
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 
-const RAW_API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:4000";
-
-function normalizeBase(base) {
-  const b = String(base || "").trim();
-  if (!b) return "http://localhost:4000";
-  return b.endsWith("/") ? b.slice(0, -1) : b;
-}
-
-const API_BASE = normalizeBase(RAW_API_BASE);
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
 
 function joinUrl(base, path) {
-  const p = String(path || "");
-  if (!p) return base;
-  if (p.startsWith("http://") || p.startsWith("https://")) return p;
-  if (p.startsWith("/")) return `${base}${p}`;
-  return `${base}/${p}`;
+  if (path.startsWith("http")) return path;
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-function parseMaybeJson(text) {
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { raw: text };
-  }
-}
-
-function hasBody(options) {
-  return Object.prototype.hasOwnProperty.call(options || {}, "body");
-}
-
-function isFormData(v) {
-  return typeof FormData !== "undefined" && v instanceof FormData;
+// 🔥 Extract ONLY the last sid from many cookies
+function extractLatestSid(cookieHeader) {
+  if (!cookieHeader) return "";
+  const parts = cookieHeader.split(";").map((s) => s.trim());
+  const sids = parts.filter((p) => p.startsWith("sid="));
+  if (!sids.length) return "";
+  return sids[sids.length - 1]; // newest one
 }
 
 export async function serverApiFetch(path, options = {}) {
-  // ✅ Correct way in Next 16
-  const cookieStore = await cookies();
   const h = await headers();
-  const cookie = cookieStore.toString() || h.get("cookie") || "";
+  const rawCookie = h.get("cookie") || "";
+  const sidOnly = extractLatestSid(rawCookie);
 
   const url = joinUrl(API_BASE, path);
 
-  const opts = { ...options };
-  const reqHeaders = { ...(opts.headers || {}) };
-
-  if (cookie) reqHeaders.cookie = cookie;
-
-  let body = undefined;
-
-  if (hasBody(opts)) {
-    const b = opts.body;
-
-    if (b === undefined || b === null) {
-      body = undefined;
-    } else if (typeof b === "string" || b instanceof Uint8Array) {
-      body = b;
-    } else if (isFormData(b)) {
-      body = b;
-    } else if (typeof b === "object") {
-      body = JSON.stringify(b);
-      reqHeaders["Content-Type"] = "application/json";
-    } else {
-      body = JSON.stringify(b);
-      reqHeaders["Content-Type"] = "application/json";
-    }
-  }
-
   const res = await fetch(url, {
-    method: opts.method || "GET",
-    headers: reqHeaders,
-    body,
-    cache: opts.cache || "no-store",
+    method: options.method || "GET",
+    headers: {
+      ...(options.headers || {}),
+      ...(sidOnly ? { cookie: sidOnly } : {}),
+      "Content-Type": "application/json",
+    },
+    body:
+      options.body && typeof options.body === "object"
+        ? JSON.stringify(options.body)
+        : options.body,
+    cache: "no-store",
   });
 
-  const text = await res.text();
-  const data = parseMaybeJson(text);
+  const data = await res.json().catch(() => null);
 
   return { ok: res.ok, status: res.status, data };
-}
-
-export async function serverApiFetchOrThrow(path, options = {}) {
-  const out = await serverApiFetch(path, options);
-  if (!out.ok) {
-    const err = new Error(out.data?.error || "Request failed");
-    err.status = out.status;
-    err.data = out.data;
-    throw err;
-  }
-  return out.data;
 }

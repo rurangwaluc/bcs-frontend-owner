@@ -30,13 +30,11 @@ async function proxy(req, { params }) {
     redirect: "manual",
   });
 
-  // 🔥 CRITICAL PART — FORWARD COOKIES
   const headers = new Headers(backendRes.headers);
 
+  // forward set-cookie
   const setCookie = backendRes.headers.get("set-cookie");
-  if (setCookie) {
-    headers.set("set-cookie", setCookie);
-  }
+  if (setCookie) headers.set("set-cookie", setCookie);
 
   return new Response(backendRes.body, {
     status: backendRes.status,

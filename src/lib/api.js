@@ -1,74 +1,43 @@
-// Always use Next.js proxy. Never call Railway directly from browser.
-const API_BASE = "/api";
-
-function joinUrl(base, path) {
-  const p = String(path || "");
-  if (!p) return base;
-  if (p.startsWith("http://") || p.startsWith("https://")) return p;
-  if (p.startsWith("/")) return `${base}${p}`;
-  return `${base}/${p}`;
-}
-
-function parseMaybeJson(text) {
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { raw: text };
-  }
-}
-
-function isFormData(v) {
-  return typeof FormData !== "undefined" && v instanceof FormData;
-}
-
-function hasOwn(obj, key) {
-  return Object.prototype.hasOwnProperty.call(obj, key);
-}
-
-function ensureJsonString(str) {
-  const s = String(str);
-  JSON.parse(s);
-  return s;
-}
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE ||
+  "http://localhost:4000";
 
 export async function apiFetch(path, options = {}) {
-  const url = joinUrl(API_BASE, path);
-
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const opts = { ...options };
-  const headers = { ...(opts.headers || {}) };
 
-  let body = undefined;
+  // Ensure headers object exists
+  opts.headers = { ...(opts.headers || {}) };
 
-  if (hasOwn(opts, "body")) {
-    const b = opts.body;
+  // Only set JSON headers if we actually have a body
+  const hasBody = "body" in opts;
 
-    if (b === undefined || b === null || b === "") {
-      body = undefined;
-    } else if (isFormData(b)) {
-      body = b;
-    } else if (typeof b === "string") {
-      body = ensureJsonString(b);
-      headers["Content-Type"] = "application/json";
-    } else if (typeof b === "object") {
-      body = JSON.stringify(b);
-      headers["Content-Type"] = "application/json";
-    } else {
-      body = JSON.stringify(b);
-      headers["Content-Type"] = "application/json";
+  if (hasBody) {
+    // If body is a plain object, stringify it
+    if (typeof opts.body === "object" && !(opts.body instanceof FormData)) {
+      opts.body = JSON.stringify(opts.body);
+    }
+
+    // Set JSON header unless we are sending FormData
+    if (!(opts.body instanceof FormData)) {
+      opts.headers["Content-Type"] = "application/json";
     }
   }
 
   const res = await fetch(url, {
-    method: opts.method || "GET",
-    headers,
-    body,
-    credentials: "include", // critical for cookies
-    cache: opts.cache || "no-store",
+    ...opts,
+    credentials: "include",
   });
 
   const text = await res.text();
-  const data = parseMaybeJson(text);
+  let data = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = { raw: text };
+  }
 
   if (!res.ok) {
     const err = new Error((data && data.error) || "Request failed");
